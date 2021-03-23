@@ -63,17 +63,28 @@ FILE = datetime.now().strftime('%Y%m%d') + '.csv'
 
 def parse_instrument_from_email(message):
     # parsing stupid tda api formats
-    # message format 'Alert: New symbol: .FB210401C292.5 was added to TheAve'
-    instrument = message[20:40].split(' ')[0]
-    splitinstrument = instrument.split('C')
-    contractstrike = splitinstrument[-1]
-    contractexpiry = re.findall(r'\d+',instrument)
-    expyear = contractexpiry[0][0:2]
-    expmonth = contractexpiry[0][2:4]
-    expday = contractexpiry[0][4:6]
-    contractsymbol = re.findall(r'\D+',instrument)
-    parsed = contractsymbol[0]+'_'+expmonth+expday+expyear+'C'+contractstrike
-    return parsed
+    # expected output is 'SPY_mmddyyC390'
+    # multiple can be provided if separated by commas
+    # message format 'Alert: New symbols: .FB210401C292.5, .MRVL210416C54, .DERP210416C69 was added to TheAve'
+    parsed = ''
+    message=message+'END'
+    messagesplit = message.split(' ')
+    for word in messagesplit:
+        if word[0] == '.':
+            instrument = word.replace(',','')
+            splitinstrument = instrument.split('C')
+            contractstrike = splitinstrument[-1]
+            contractexpiry = re.findall(r'\d+',instrument)
+            expyear = contractexpiry[0][0:2]
+            expmonth = contractexpiry[0][2:4]
+            expday = contractexpiry[0][4:6]
+            contractsymbol = re.findall(r'\D+',instrument)
+            contractsymbol[0] = contractsymbol[0].replace('.','')
+            parsed = parsed+contractsymbol[0]+'_'+expmonth+expday+expyear+'C'+contractstrike+' '
+    if len(parsed.split(' ')) > 2:
+        parsed = parsed.replace(' ',',')
+        parsed = parsed[:-1]
+    return parsed # one or more separated by commas
 
 def log_data(quote):
     print('Logging to file...')
@@ -136,7 +147,7 @@ def main():
                 print(msg['snippet'][0:60]+'[...]')
                 service.users().messages().modify(userId='me', id=message['id'],body={'removeLabelIds': ['UNREAD']}).execute()
                 print('Message marked as read')
-                instruments.append(parse_instrument_from_email(msg['snippet'][0:60]))
+                instruments.append(parse_instrument_from_email(msg['snippet']))
                 print(instruments)
             quote = c.get_quotes(symbols=instruments)
             assert quote.status_code == 200, quote.raise_for_status()
