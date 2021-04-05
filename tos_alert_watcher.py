@@ -97,9 +97,10 @@ def log_data(quote):
             strike = quote[q]['strikePrice']
             bid = quote[q]['bidPrice']
             ask = quote[q]['askPrice']
+            vol = quote[q]['volatility']
             lastPrice = quote[q]['lastPrice']
             dataObtained = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-            wr.writerow([symbol,expdate,strike,bid,ask,lastPrice,dataObtained])
+            wr.writerow([symbol,expdate,strike,bid,ask,lastPrice,vol,dataObtained])
 
 def main():
     print('Script start time: ' + datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
@@ -107,7 +108,7 @@ def main():
     # Get our log file and make headers
     with open(FILE,'a',newline='') as f:
         wr = csv.writer(f, dialect='excel')
-        wr.writerow(['symbol','expdate','strike','bid','ask','lastPrice','dataObtained'])
+        wr.writerow(['symbol','expdate','strike','bid','ask','lastPrice','volatility','dataObtained'])
 
     # Auth with gmail and make token if not already existing
     SCOPES = ['https://www.googleapis.com/auth/gmail.modify']
